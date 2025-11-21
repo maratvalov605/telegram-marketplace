@@ -1,16 +1,26 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import Profile from './pages/Profile';
+import React from 'react'
+import { useTelegramAuth } from './hooks/useTelegramAuth'
+import HomePage from './pages/HomePage'
+import ProfilePage from './pages/ProfilePage'
+import './App.css'
 
-export default function App() {
+function App() {
+  const { user, isLoading, currentPage, navigateTo } = useTelegramAuth()
+
+  if (isLoading) {
+    return <div className="container">Loading...</div>
+  }
+
   return (
-    <BrowserRouter>
-      <div className="h-screen overflow-y-auto">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/profile" element={<Profile />} />
-        </Routes>
-      </div>
-    </BrowserRouter>
-  );
+    <div className="container">
+      {currentPage === 'home' && (
+        <HomePage user={user} onNavigate={navigateTo} />
+      )}
+      {currentPage === 'profile' && (
+        <ProfilePage user={user} onNavigate={navigateTo} />
+      )}
+    </div>
+  )
 }
+
+export default App
