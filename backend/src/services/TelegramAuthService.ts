@@ -13,7 +13,8 @@ export class TelegramAuthService {
 
     // Парсим данные
     const params = new URLSearchParams(initData);
-    const telegramId = parseInt(params.get('user')?.id || '0');
+    const userData = params.get('user');
+    const telegramId = userData ? JSON.parse(userData).id : 0;
 
     if (!telegramId) {
       throw new Error('User data not found');

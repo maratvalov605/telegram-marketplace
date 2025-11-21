@@ -1,24 +1,44 @@
-import React, { useState } from 'react'
-import { authApi } from '../services/api'
+import React, { useState, useEffect } from 'react';
+import { authApi } from '../services/api';
 
 interface ProfilePageProps {
-  user: any
-  onNavigate: (page: string) => void
+  user: any;
+  onNavigate: (page: string) => void;
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = ({ user, onNavigate }) => {
-  const [tradeName, setTradeName] = useState(user?.tradeName || '')
-  const [isEditing, setIsEditing] = useState(false)
+  const [tradeName, setTradeName] = useState(user?.tradeName || '');
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    if (user?.tradeName) {
+      setTradeName(user.tradeName);
+    }
+  }, [user]);
 
   const handleSave = async () => {
-    try {
-      await authApi.updateProfile(user.id, tradeName)
-      setIsEditing(false)
-      window.location.reload() // Простой способ обновить данные
-    } catch (error) {
-      console.error('Failed to update profile:', error)
+    if (!user?.id) {
+      alert('Ошибка: пользователь не загружен');
+      return;
     }
-  }
+
+    console.log('Saving tradeName:', tradeName, 'for user:', user.id);
+
+    try {
+      const result = await authApi.updateProfile(user.id, tradeName);
+      console.log('Save result:', result);
+
+      if (result.user) {
+        setIsEditing(false);
+        alert('Имя успешно сохранено!');
+      } else {
+        alert('Ошибка сохранения: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      alert('Ошибка соединения с сервером');
+    }
+  };
 
   return (
     <div>
@@ -71,7 +91,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onNavigate }) => {
         <p><strong>Зарегистрирован:</strong> {new Date(user?.createdAt).toLocaleDateString()}</p>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ProfilePage
+export default ProfilePage;

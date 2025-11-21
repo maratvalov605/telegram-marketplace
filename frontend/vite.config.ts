@@ -6,5 +6,10 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173
+  },
+  // ДОБАВЬ ЭТО ДЛЯ VERCEL
+  base: './',
+  build: {
+    outDir: 'dist'
   }
 })
