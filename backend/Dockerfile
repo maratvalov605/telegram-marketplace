@@ -1,26 +1,14 @@
-# Build stage
-FROM node:20-alpine AS builder
+FROM node:18-alpine
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install
 
 COPY . .
+RUN npx prisma generate
+RUN npm run build
 
-# Optional: build if using TS (не обязательно, если будет tsc-watch в dev)
-# RUN npm run build
+EXPOSE 3000
 
-# Final stage
-FROM node:20-alpine
-
-WORKDIR /app
-
-# Только production-зависимости
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/prisma ./prisma/
-COPY --from=builder /app/src ./src/
-
-# Запуск в dev-режиме (для локального)
-CMD ["npm", "exec", "ts-node-dev", "--respawn", "--transpile-only", "src/index.ts"]
+CMD ["npm", "start"]

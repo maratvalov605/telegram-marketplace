@@ -1,19 +1,16 @@
+version: '3.8'
+
 services:
-  db:
+  postgres:
     image: postgres:15
     environment:
-      POSTGRES_DB: marketplace
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: telegram_marketplace
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev -d marketplace"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
@@ -23,24 +20,20 @@ services:
   backend:
     build: ./backend
     ports:
-      - "3001:3001"
+      - "3001:3000"
     environment:
-      DATABASE_URL: postgresql://dev:devpass@db:5432/marketplace?schema=public
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: marketplace_jwt_secret_2025
-      TELEGRAM_BOT_TOKEN: your_actual_bot_token_here  # ← замените!
+      - DATABASE_URL=postgresql://admin:password@postgres:5432/telegram_marketplace
+      - NODE_ENV=development
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
+      - postgres
+      - redis
 
   frontend:
     build: ./frontend
     ports:
-      - "5173:80"
+      - "5173:5173"
     depends_on:
       - backend
 
 volumes:
-  pgdata:
+  postgres_data:
