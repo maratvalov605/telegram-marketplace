@@ -1,4 +1,3 @@
-import React from 'react'
 import { useTelegramAuth } from './hooks/useTelegramAuth'
 import HomePage from './pages/HomePage'
 import ProfilePage from './pages/ProfilePage'
