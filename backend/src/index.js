@@ -1,129 +1,144 @@
-const http = require('http');
-const url = require('url');
+import http from 'http';
+import { StringDecoder } from 'string_decoder';
 
-const port = 3000;
+const PORT = process.env.PORT || 3000;
+
+// CORS middleware
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, DELETE',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Credentials': true
+};
 
 const server = http.createServer((req, res) => {
-    // CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, corsHeaders);
+    res.end();
+    return;
+  }
 
-    if (req.method === 'OPTIONS') {
-        res.writeHead(200);
-        res.end();
-        return;
-    }
+  // Set CORS headers
+  Object.entries(corsHeaders).forEach(([key, value]) => {
+    res.setHeader(key, value);
+  });
 
-    const parsedUrl = url.parse(req.url, true);
-    const pathname = parsedUrl.pathname;
-    const query = parsedUrl.query;
+  const decoder = new StringDecoder('utf-8');
+  let buffer = '';
 
-    console.log(`${req.method} ${req.url}`);
+  req.on('data', (data) => {
+    buffer += decoder.write(data);
+  });
+
+  req.on('end', () => {
+    buffer += decoder.end();
+
+    const { url, method } = req;
+    const parsedUrl = new URL(url, `http://${req.headers.host}`);
+    const path = parsedUrl.pathname;
+    const query = Object.fromEntries(parsedUrl.searchParams);
+
+    console.log(`${method} ${path}`);
 
     // Health check
-    if (pathname === '/health' && req.method === 'GET') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: 'OK', message: 'Backend is running!' }));
-        return;
+    if (path === '/health' && method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'OK', message: 'Backend is running!' }));
+      return;
     }
 
     // Test endpoint
-    if (pathname === '/api/test' && req.method === 'GET') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'API is working!' }));
-        return;
+    if (path === '/api/test' && method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'API is working!' }));
+      return;
+    }
+
+    // Products endpoint
+    if (path === '/api/products' && method === 'GET') {
+      const mockProducts = [
+        {
+          product_id: 1,
+          title: "Smartphone XYZ",
+          description: "Latest smartphone with great features",
+          price: 1000,
+          category: "electronics",
+          type: "sell",
+          status: "active",
+          images: []
+        },
+        {
+          product_id: 2,
+          title: "Programming Book",
+          description: "Learn JavaScript programming",
+          price: 500,
+          category: "books",
+          type: "sell",
+          status: "active",
+          images: []
+        },
+        {
+          product_id: 3,
+          title: "Wireless Headphones",
+          description: "High quality wireless headphones",
+          price: 2500,
+          category: "electronics",
+          type: "sell",
+          status: "active",
+          images: []
+        }
+      ];
+
+      const limit = parseInt(query.limit) || 20;
+      const offset = parseInt(query.offset) || 0;
+
+      const response = {
+        products: mockProducts.slice(offset, offset + limit),
+        total: mockProducts.length,
+        limit,
+        offset
+      };
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(response));
+      return;
     }
 
     // Users endpoint
-    if (pathname === '/api/users' && req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => body += chunk);
-        req.on('end', () => {
-            const userData = JSON.parse(body || '{}');
-            const user = {
-                user_id: 1,
-                telegram_id: userData.telegram_id || 123456,
-                trade_name: 'Test User',
-                rating: 5.0,
-                trust_level: 'new',
-                created_at: new Date().toISOString()
-            };
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(user));
-        });
-        return;
-    }
-
-    // Products endpoint with query parameters support
-    if (pathname === '/api/products' && req.method === 'GET') {
-        const limit = parseInt(query.limit) || 20;
-        const offset = parseInt(query.offset) || 0;
-
-        console.log(`Products request: limit=${limit}, offset=${offset}`);
-
-        const products = {
-            products: [
-                {
-                    product_id: 1,
-                    title: 'Тестовый товар 1',
-                    description: 'Описание тестового товара',
-                    price: 1000,
-                    category: 'electronics',
-                    type: 'sell',
-                    status: 'active',
-                    images: []
-                },
-                {
-                    product_id: 2,
-                    title: 'Тестовый товар 2',
-                    description: 'Еще один тестовый товар',
-                    price: 500,
-                    category: 'books',
-                    type: 'sell',
-                    status: 'active',
-                    images: []
-                },
-                {
-                    product_id: 3,
-                    title: 'Игровая мышь',
-                    description: 'Беспроводная игровая мышь',
-                    price: 2500,
-                    category: 'electronics',
-                    type: 'sell',
-                    status: 'active',
-                    images: []
-                }
-            ],
-            total: 3,
-            limit: limit,
-            offset: offset
-        };
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(products));
-        return;
+    if (path === '/api/users' && method === 'POST') {
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        message: 'User created successfully',
+        user_id: Math.floor(Math.random() * 1000)
+      }));
+      return;
     }
 
     // Chats endpoint
-    if (pathname === '/api/chats' && req.method === 'GET') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ chats: [] }));
-        return;
+    if (path === '/api/chats' && method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        chats: [],
+        message: 'Chats endpoint'
+      }));
+      return;
     }
 
-    // 404 for unknown routes
+    // Not found
     res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found', path: pathname }));
+    res.end(JSON.stringify({ error: 'Endpoint not found' }));
+  });
 });
 
-server.listen(port, '0.0.0.0', () => {
-    console.log(`🚀 Backend server running on http://0.0.0.0:${port}`);
-    console.log('✅ API endpoints:');
-    console.log('   GET  /health');
-    console.log('   GET  /api/test');
-    console.log('   POST /api/users');
-    console.log('   GET  /api/products?limit=20&offset=0');
-    console.log('   GET  /api/chats');
+server.listen(PORT, () => {
+  console.log(`🚀 Backend server running on port ${PORT}`);
+  console.log('✅ API endpoints:');
+  console.log('   GET  /health');
+  console.log('   GET  /api/test');
+  console.log('   POST /api/users');
+  console.log('   GET  /api/products?limit=20&offset=0');
+  console.log('   GET  /api/chats');
 });
 
-console.log('✅ Server starting...');
+export default server;

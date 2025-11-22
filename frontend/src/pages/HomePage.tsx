@@ -1,311 +1,157 @@
-import React from 'react';
-import { Product, ProductTypeFilter } from '../types/types';
-import { ProductCard } from '../components/Product/ProductCard';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { getProducts } from '../services/productService';
+import { Product } from '../types';
 
-interface HomePageProps {
-  products: Product[];
-  productTypeFilter: ProductTypeFilter;
-  onBuyProduct: (productId: number) => void;
-  onFilterChange: (filter: ProductTypeFilter) => void;
-  onRefresh?: () => void;
-}
+const HomePage: React.FC = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
 
-export const HomePage: React.FC<HomePageProps> = ({
-  products,
-  productTypeFilter,
-  onBuyProduct,
-  onFilterChange,
-  onRefresh
-}) => {
-  const filteredProducts = products.filter(product =>
-    productTypeFilter === 'all' || product.type === productTypeFilter
-  );
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await getProducts({ limit: 8, offset: 0 });
 
-  const getEmptyStateText = () => {
-    switch (productTypeFilter) {
-      case 'sell':
-        return 'Нет товаров для продажи';
-      case 'buy':
-        return 'Нет запросов на покупку';
-      default:
-        return 'Пока нет товаров';
-    }
-  };
+        if (response && response.products && Array.isArray(response.products)) {
+          setProducts(response.products);
+          // Берем первые 3 продукта как featured
+          setFeaturedProducts(response.products.slice(0, 3));
+        }
+      } catch (err) {
+        console.error('Error loading products:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const getEmptyStateSubtext = () => {
-    switch (productTypeFilter) {
-      case 'sell':
-        return 'Будьте первым, кто предложит товар!';
-      case 'buy':
-        return 'Создайте запрос на покупку первым!';
-      default:
-        return 'Будьте первым, кто добавит объявление!';
-    }
-  };
+    loadProducts();
+  }, []);
+
+  const stats = [
+    { value: products.length, label: 'Active Products', icon: '🛒' },
+    { value: '24/7', label: 'Support', icon: '🛡️' },
+    { value: '100%', label: 'Secure', icon: '🔒' },
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-64">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading marketplace...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={styles.container}>
-      {/* Search Bar */}
-      <div style={styles.searchBar}>
-        <div style={styles.searchRow}>
-          <div style={styles.searchInput}>
-            <span style={styles.searchIcon}>🔍</span>
-            <span style={styles.searchText}>Поиск товаров...</span>
-          </div>
-          {onRefresh && (
-            <button
-              style={styles.refreshButton}
-              onClick={onRefresh}
-              title="Обновить"
-            >
-              🔄
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Filter Tabs */}
-      <div style={styles.tabsContainer}>
-        <div style={styles.tabs}>
-          <button
-            style={{
-              ...styles.tab,
-              ...(productTypeFilter === 'all' ? styles.activeTab : {})
-            }}
-            onClick={() => onFilterChange('all')}
+    <div className="container mx-auto px-4 py-6">
+      {/* Hero Section */}
+      <section className="text-center mb-12">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-8 text-white mb-8 shadow-xl">
+          <h1 className="text-4xl font-bold mb-4">Welcome to Telegram Market! 🛒</h1>
+          <p className="text-blue-100 text-lg mb-6">
+            Buy and sell safely within Telegram. Fast, secure, and easy to use.
+          </p>
+          <Link
+            to="/create"
+            className="inline-flex items-center space-x-2 bg-white text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors shadow-lg"
           >
-            Все
-          </button>
-          <button
-            style={{
-              ...styles.tab,
-              ...(productTypeFilter === 'sell' ? styles.activeTab : {})
-            }}
-            onClick={() => onFilterChange('sell')}
-          >
-            Продам
-          </button>
-          <button
-            style={{
-              ...styles.tab,
-              ...(productTypeFilter === 'buy' ? styles.activeTab : {})
-            }}
-            onClick={() => onFilterChange('buy')}
-          >
-            Куплю
-          </button>
-        </div>
-      </div>
-
-      {/* Products List */}
-      <div style={styles.content}>
-        {/* Products Count */}
-        <div style={styles.productsCount}>
-          Найдено объявлений: {filteredProducts.length}
+            <span>🚀 Start Selling</span>
+          </Link>
         </div>
 
-        {/* Products Grid */}
-        <div style={styles.productsList}>
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onBuy={onBuyProduct}
-            />
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {stats.map((stat, index) => (
+            <div key={index} className="bg-white rounded-2xl p-4 shadow-lg border border-gray-100">
+              <div className="text-2xl mb-2">{stat.icon}</div>
+              <div className="text-2xl font-bold text-gray-800">{stat.value}</div>
+              <div className="text-sm text-gray-600">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Featured Products */}
+      <section className="mb-12">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">Featured Products ✨</h2>
+          <Link
+            to="/products"
+            className="text-blue-600 hover:text-blue-700 font-semibold text-sm"
+          >
+            View All →
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {featuredProducts.map((product) => (
+            <div key={product.product_id} className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
+              <div className="h-48 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                <span className="text-6xl text-gray-400 group-hover:scale-110 transition-transform">📦</span>
+              </div>
+              <div className="p-6">
+                <h3 className="font-semibold text-lg text-gray-800 mb-2 line-clamp-2">
+                  {product.title}
+                </h3>
+                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                  {product.description}
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-bold text-green-600">
+                    ${product.price}
+                  </span>
+                  <span className="bg-blue-100 text-blue-800 text-xs font-medium px-3 py-1 rounded-full">
+                    {product.category}
+                  </span>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
 
-        {/* Empty State */}
-        {filteredProducts.length === 0 && (
-          <div style={styles.emptyState}>
-            <div style={styles.emptyIcon}>📦</div>
-            <div style={styles.emptyText}>{getEmptyStateText()}</div>
-            <div style={styles.emptySubtext}>{getEmptyStateSubtext()}</div>
-          </div>
-        )}
-
-        {/* Load More */}
-        {filteredProducts.length > 0 && (
-          <div style={styles.loadMore}>
-            <button
-              style={styles.loadMoreButton}
-              onClick={() => console.log('Load more...')}
+        {featuredProducts.length === 0 && (
+          <div className="text-center py-12 bg-white rounded-2xl shadow-lg border border-gray-100">
+            <div className="text-6xl mb-4">🛍️</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No Products Yet</h3>
+            <p className="text-gray-600 mb-6">Be the first to list your product!</p>
+            <Link
+              to="/create"
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all"
             >
-              Показать еще...
-            </button>
+              <span>Add First Product</span>
+            </Link>
           </div>
         )}
-      </div>
+      </section>
+
+      {/* Quick Actions */}
+      <section className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Quick Actions ⚡</h2>
+        <div className="grid grid-cols-2 gap-4">
+          <Link
+            to="/products"
+            className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-xl text-center hover:shadow-lg transition-all group"
+          >
+            <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">🛒</div>
+            <div className="font-semibold">Browse All</div>
+            <div className="text-sm opacity-90">Discover products</div>
+          </Link>
+          <Link
+            to="/create"
+            className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6 rounded-xl text-center hover:shadow-lg transition-all group"
+          >
+            <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">💎</div>
+            <div className="font-semibold">Sell Fast</div>
+            <div className="text-sm opacity-90">List your item</div>
+          </Link>
+        </div>
+      </section>
     </div>
   );
 };
-
-const styles = {
-  container: {
-    paddingBottom: '60px',
-    backgroundColor: '#f8f9fa',
-    minHeight: '100vh',
-  },
-
-  searchBar: {
-    backgroundColor: '#fff',
-    borderBottom: '1px solid #e0e0e0',
-    padding: '16px',
-    position: 'sticky' as const,
-    top: 0,
-    zIndex: 100,
-  },
-
-  searchRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-  },
-
-  searchInput: {
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '12px 16px',
-    backgroundColor: '#f5f5f5',
-    borderRadius: '20px',
-    fontSize: '14px',
-    color: '#888',
-    cursor: 'pointer',
-  },
-
-  searchIcon: {
-    fontSize: '16px',
-  },
-
-  searchText: {
-    flex: 1,
-  },
-
-  refreshButton: {
-    padding: '10px',
-    border: 'none',
-    backgroundColor: '#f0f0f0',
-    borderRadius: '10px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    minWidth: '40px',
-    minHeight: '40px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'background-color 0.2s',
-  },
-
-  tabsContainer: {
-    backgroundColor: '#fff',
-    borderBottom: '1px solid #e0e0e0',
-    padding: '0 16px',
-  },
-
-  tabs: {
-    display: 'flex',
-    gap: '4px',
-    padding: '8px 0',
-  },
-
-  tab: {
-    flex: 1,
-    padding: '12px 0',
-    border: 'none',
-    backgroundColor: 'transparent',
-    fontSize: '14px',
-    fontWeight: 500,
-    cursor: 'pointer',
-    borderRadius: '8px',
-    transition: 'all 0.2s',
-  },
-
-  activeTab: {
-    backgroundColor: '#0088cc',
-    color: 'white',
-  },
-
-  content: {
-    padding: '16px',
-  },
-
-  productsCount: {
-    fontSize: '14px',
-    color: '#666',
-    marginBottom: '16px',
-    padding: '0 4px',
-  },
-
-  productsList: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '12px',
-  },
-
-  emptyState: {
-    textAlign: 'center' as const,
-    padding: '60px 20px',
-    color: '#666',
-  },
-
-  emptyIcon: {
-    fontSize: '64px',
-    marginBottom: '20px',
-    opacity: 0.5,
-  },
-
-  emptyText: {
-    fontSize: '18px',
-    marginBottom: '8px',
-    fontWeight: 600,
-  },
-
-  emptySubtext: {
-    fontSize: '14px',
-    lineHeight: 1.4,
-  },
-
-  loadMore: {
-    textAlign: 'center' as const,
-    marginTop: '24px',
-    padding: '16px 0',
-  },
-
-  loadMoreButton: {
-    padding: '14px 32px',
-    backgroundColor: '#f0f0f0',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: 500,
-    cursor: 'pointer',
-    color: '#333',
-    transition: 'background-color 0.2s',
-  },
-};
-
-// Добавляем hover эффекты
-const hoverStyles = `
-  .refreshButton:hover {
-    background-color: #e0e0e0 !important;
-  }
-  
-  .tab:hover:not(.activeTab) {
-    background-color: #f5f5f5 !important;
-  }
-  
-  .loadMoreButton:hover {
-    background-color: #e0e0e0 !important;
-  }
-`;
-
-// Вставляем стили в документ
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style');
-  styleSheet.textContent = hoverStyles;
-  document.head.appendChild(styleSheet);
-}
 
 export default HomePage;

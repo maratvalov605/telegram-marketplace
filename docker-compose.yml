@@ -36,7 +36,7 @@ services:
       JWT_SECRET: your_jwt_secret_change_this
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
     ports:
-      - "3001:3000"
+      - "3000:3000"
     depends_on:
       - postgres
       - redis
