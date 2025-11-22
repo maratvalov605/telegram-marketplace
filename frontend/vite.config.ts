@@ -4,12 +4,11 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: true,
-    port: 5173
+    port: 3000,
+    host: true
   },
-  // ДОБАВЬ ЭТО ДЛЯ VERCEL
-  base: './',
   build: {
-    outDir: 'dist'
+    outDir: 'dist',
+    sourcemap: true
   }
 })

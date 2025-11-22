@@ -1,51 +1,78 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { UserService } from '../services/UserService';
+import { CreateUserRequest, UpdateUserRequest } from '../models/User';
 
-const prisma = new PrismaClient();
+const userService = new UserService();
 
 export class UserController {
-  static async getProfile(req: Request, res: Response) {
+  async findOrCreate(req: Request, res: Response) {
     try {
-      const { userId } = req.params;
-      console.log('Getting profile for user:', userId);
+      const userData: CreateUserRequest = req.body;
 
-      const user = await prisma.user.findUnique({
-        where: { id: userId }
-      });
+      if (!userData.telegramId || !userData.tradeName) {
+        return res.status(400).json({
+          error: 'telegramId and tradeName are required'
+        });
+      }
+
+      const user = await userService.findOrCreate(userData);
+      res.json(user);
+    } catch (error) {
+      console.error('Error in findOrCreate:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  async getProfile(req: Request, res: Response) {
+    try {
+      const { telegramId } = req.params;
+
+      if (!telegramId) {
+        return res.status(400).json({ error: 'telegramId is required' });
+      }
+
+      const user = await userService.findByTelegramId(Number(telegramId));
 
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      res.json({ user });
+      res.json(user);
     } catch (error) {
-      console.error('Get profile error:', error);
+      console.error('Error in getProfile:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  static async updateProfile(req: Request, res: Response) {
+  async updateProfile(req: Request, res: Response) {
     try {
-      const { userId } = req.params;
-      const { tradeName } = req.body;
+      const { telegramId } = req.params;
+      const updates: UpdateUserRequest = req.body;
 
-      console.log('Updating user:', userId, 'to tradeName:', tradeName);
-
-      // ПРОСТАЯ ВАЛИДАЦИЯ
-      if (!tradeName || tradeName.trim().length === 0) {
-        return res.status(400).json({ error: 'Trade name is required' });
+      if (!telegramId) {
+        return res.status(400).json({ error: 'telegramId is required' });
       }
 
-      const user = await prisma.user.update({
-        where: { id: userId },
-        data: { tradeName: tradeName.trim() }
-      });
+      const updatedUser = await userService.updateUser(Number(telegramId), updates);
 
-      console.log('User updated successfully:', user);
-      res.json({ user });
+      if (!updatedUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      res.json(updatedUser);
     } catch (error) {
-      console.error('Update profile error:', error);
-      res.status(500).json({ error: 'Failed to update profile' });
+      console.error('Error in updateProfile:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  async getAllUsers(req: Request, res: Response) {
+    try {
+      const users = await userService.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error('Error in getAllUsers:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   }
 }

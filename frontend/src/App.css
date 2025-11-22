@@ -1,3 +1,42 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #ffffff;
+  color: #333333;
+  line-height: 1.4;
+}
+
 .App {
-  text-align: center;
+  max-width: 100%;
+  min-height: 100vh;
+  background-color: #ffffff;
+}
+
+/* Сброс стилей кнопок */
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Улучшение скролла */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
